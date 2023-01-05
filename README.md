@@ -1,6 +1,7 @@
 # CPU
 small shitty theoretical CPU I'm making so the brainworms don't consume me
-features
+
+features :
   - no libraries (except std)
   - really bad at everything
   
