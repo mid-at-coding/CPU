@@ -1,5 +1,5 @@
 /* 
-Shitty CPU by cattodoameow
+Shitty little endian CPU by cattodoameow
 Limitations :
     - no constants
     - slow
@@ -11,8 +11,9 @@ Limitations :
 */
 
 #include <iostream>
+#include <iomanip>
 #include <cmath>
-#define BITS 8
+const unsigned int BITS = 8;
 #define _UINT_MAX {1,1,1,1,1,1,1,1}
 #define UINT_NULL {0,0,0,0,0,0,0,0}
 #define RAMPTR GET(RAMPTR_ADDR)
@@ -32,20 +33,26 @@ public :
 	}
 };
 
-int convert_to_int(unsigned_int in); // these ones aren't supposed to be instructions, they're just placeholders to make coding this easier lol
+int convert_to_int(unsigned_int in); // these ones aren't supposed to be instructions, they're just here to make coding this easier lol
 
 unsigned_int bool_to_unsigned(bool in);
 
 bool checkOverflow(unsigned_int x);
 
+void showBits(unsigned_int x);
+
 class computerInstance{
 public :
     unsigned_int REGISTER[256]; // address 0 reserved for function output
     unsigned_int RAM[256]; // address 0-7 reserved for system variables
-    unsigned_int RAMPTR_ADDR = {1,1,1,0,0,0,0,0}; // stored in ram address 7
+    unsigned_int RAMPTR_ADDR = {0,0,0,0,0,0,0,0};
     
     void start(); // initializes the computer
     
+    void dump(); // dumps ram and register and exits
+
+    void quickDump(); // dumps first 20 addresses of ram and register and exits
+
     unsigned_int GET(unsigned_int addr); // returns the RAM value at the given address
 
     unsigned_int GET_R(unsigned_int addr); // returns the register value at the given address

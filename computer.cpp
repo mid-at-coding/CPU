@@ -25,11 +25,47 @@ bool checkOverflow(unsigned_int x){
 	return true;
 }
 
+void showBits(unsigned_int in){
+	for(int i = 0; i < BITS; i++){
+		std::cout << in.bits[i];
+	}
+	std::cout << "\n";
+}
+
 void computerInstance::start(){
 	for(int i = 0; i < pow(2,BITS); i++){
 		REGISTER[i] = 0;
 		RAM[i] = 0;
 	}
+	RAM[RAMPTR_ADDR] = {0,0,0,1,0,0,0,0};
+}
+
+void computerInstance::dump(){
+	std::cout << "RAM : Decimal : Binary \n";
+	for(int i = 0; i < pow(2,BITS); i++){
+		std::cout << std::setw(5) <<  i << " : " << std::setw(5) << RAM[i] << " : ";
+		showBits(RAM[i]);
+	}
+	std::cout << "Register : Decimal : Binary \n";
+	for(int i = 0; i < pow(2,BITS); i++){
+		std::cout << std::setw(5) << i << " : " << std::setw(5) << REGISTER[i] << " : ";
+		showBits(REGISTER[i]);
+	}
+	exit(0);
+}
+
+void computerInstance::quickDump(){
+	std::cout << "RAM : Decimal : Binary \n";
+	for(int i = 0; i < 20; i++){
+		std::cout << std::setw(5) <<  i << " : " << std::setw(5) << RAM[i] << " : ";
+		showBits(RAM[i]);
+	}
+	std::cout << "Register : Decimal : Binary \n";
+	for(int i = 0; i < 20; i++){
+		std::cout << std::setw(5) << i << " : " << std::setw(5) << REGISTER[i] << " : ";
+		showBits(REGISTER[i]);
+	}
+	exit(0);
 }
 
 unsigned_int computerInstance::GET_R(unsigned_int addr){
@@ -45,8 +81,7 @@ void computerInstance::REG(unsigned_int val, unsigned_int addr){
 }
 
 void computerInstance::PUSH(unsigned_int x){
-	REG(RAMPTR,UINT_NULL); // stores original ramptr in register 0 -- this is the address of the variable being pushed
-	REG({1,0,0,0,0,0,0,0},{1,0,0,0,0,0,0,0});
+	REG(RAMPTR,UINT_NULL);
 	RAM[RAMPTR] = x;
 	ITERATE(RAMPTR_ADDR);
 }
@@ -63,7 +98,7 @@ void computerInstance::POP(){
 void computerInstance::ITERATE(unsigned_int addr_x){
 	for(int i = 0; i < BITS; i++){
 		RAM[addr_x].bits[i] = !GET(addr_x).bits[i];
-		if(!GET(addr_x).bits[i])
+		if(GET(addr_x).bits[i])
 			return;
 	}
 }
@@ -71,7 +106,7 @@ void computerInstance::ITERATE(unsigned_int addr_x){
 
 void computerInstance::DEITERATE(unsigned_int addr_x){
 	for(int i = 0; i < BITS; i++){
-		RAM[addr_x].bits[i] = GET(addr_x).bits[i];
+		RAM[addr_x].bits[i] = !GET(addr_x).bits[i];
 		if(!GET(addr_x).bits[i])
 			return;
 	}
@@ -125,14 +160,14 @@ void computerInstance::MUL(unsigned_int addr_x, unsigned_int addr_y){
 	unsigned_int addr_ret = GET_R(UINT_NULL);
 	PUSH();
 	unsigned_int addr_iterator = GET_R(UINT_NULL);
-	PUSH();
-	unsigned_int addr_comp_res = GET_R(UINT_NULL);
-	PUSH({1,0,0,0,0,0,0,0});
-	unsigned_int addr_iterate = GET_R(UINT_NULL); // 32 bits for one multiplication...
 	COM(addr_iterator,addr_y);
-	RAM[addr_comp_res] = GET_R(UINT_NULL);
-	while(COM(addr_comp_res))
-	POP();
+	while(!GET_R(UINT_NULL)){
+		ADD(addr_ret,addr_x);
+		RAM[addr_ret] = GET_R(UINT_NULL);
+
+		ITERATE(addr_iterator);
+		COM(addr_iterator,addr_y);
+	}
 	POP();
 	POP();
 	POP();
@@ -140,24 +175,21 @@ void computerInstance::MUL(unsigned_int addr_x, unsigned_int addr_y){
 }
 
 void computerInstance::DIV(unsigned_int addr_x, unsigned_int addr_y){ // x/y = res 
-	PUSH({0,0,0,0,0,0,0,0});
+	std::cout << "dividend = " << GET(addr_x) << "\ndivisor = " << GET(addr_y) << "\n";
+	PUSH({1,0,0,0,0,0,0,0});
 	unsigned_int addr_iterator = GET_R(UINT_NULL);
-	PUSH({0,0,0,0,0,0,0,0});
-	unsigned_int addr_iterate = GET_R(UINT_NULL);
-	PUSH({0,0,0,0,0,0,0,0});
-	unsigned_int addr_ret = GET_R(UINT_NULL);
-	MUL(addr_ret,addr_y);
-	RAM[addr_ret] = GET_R(UINT_NULL);
-	COM(addr_ret,addr_x);
-	for(;!GET_R(UINT_NULL);COM(addr_ret,addr_x)){
-		ADD(addr_iterator,addr_iterate);
-		RAM[addr_iterator] = GET_R(UINT_NULL);
-		RAM[addr_ret] = RAM[addr_iterator];
-		MUL(addr_ret,addr_y);
-		RAM[addr_ret] = GET_R(UINT_NULL);
+	std::cout << "iterator = " << GET(addr_iterator) << "\n";
+	MUL(addr_iterator,addr_y);
+	COM(GET_R(UINT_NULL),addr_x);
+	while(!GET_R(UINT_NULL)){
+		ITERATE(addr_iterator);
+		std::cout << "iterator = " << GET(addr_iterator) << "\n";
+		MUL(addr_x,addr_y);
+		std::cout << GET_R(UINT_NULL) << " = " << GET(addr_iterator) << " * " << GET(addr_y) << "\n";
+		COM(GET_R(UINT_NULL),addr_x);
 	}
-	REG(RAM[addr_ret],UINT_NULL);
 	POP();
 	POP();
 	POP();
+	REG(GET(addr_iterator),UINT_NULL);
 }
