@@ -1,7 +1,7 @@
 /* 
 Shitty little endian CPU by cattodoameow
 Limitations :
-    - no constants
+    - no constants (cant be like ADD(1,2), have to put them into variables)
     - slow
     - limited instruction set
     - shitty
@@ -10,12 +10,13 @@ Limitations :
     (don't, if you were so inclined for whatever reason, use this for sensitive things)
 */
 
+#include "instructions.hpp"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-const unsigned int BITS = 8;
-#define _UINT_MAX {1,1,1,1,1,1,1,1}
-#define UINT_NULL {0,0,0,0,0,0,0,0}
+const unsigned int BITS = 16;
+#define _UINT_MAX {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0}
+#define UINT_NULL {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 #define RAMPTR GET(RAMPTR_ADDR)
 class unsigned_int{
 public :
@@ -31,6 +32,11 @@ public :
 		*this = UINT_NULL;
 		bits[0] = in;
 	}
+    void operator =(unsigned in){
+        for(int i = 0; i < BITS; i++){
+            bits[i] = in % (int)pow(2,i);
+        }
+    }
 };
 
 int convert_to_int(unsigned_int in); // these ones aren't supposed to be instructions, they're just here to make coding this easier lol
@@ -43,39 +49,58 @@ void showBits(unsigned_int x);
 
 class computerInstance{
 public :
-    unsigned_int REGISTER[256]; // address 0 reserved for function output
-    unsigned_int RAM[256]; // address 0-7 reserved for system variables
-    unsigned_int RAMPTR_ADDR = {0,0,0,0,0,0,0,0};
+    unsigned_int REGISTER[5] = {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+    // A - accumulator
+    // B - program counter
+    // C - general purpose
+    // D - general purpose
+    // E - general purpose
+
+    void next(); // run next operation
     
-    void start(); // initializes the computer
+    unsigned_int RAM[256];
+    // addresses 0 - 32 is stack
+    // addresses 33 - 255 is heap
+    unsigned_int RAMPTR_ADDR = {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+    void init(); // initializes the computer
     
-    void dump(); // dumps ram and register and exits
+    void dump(); // dumps memory and exits
 
-    void quickDump(); // dumps first 20 addresses of ram and register and exits
+    void STP();
 
-    unsigned_int GET(unsigned_int addr); // returns the RAM value at the given address
+    void JMP(unsigned_int addr);
+    
+    void JZ(unsigned_int addr);
 
-    unsigned_int GET_R(unsigned_int addr); // returns the register value at the given address
+    void JNZ(unsigned_int addr);  
 
-    void ITERATE(unsigned_int addr_x); // iterates x in place
 
-    void DEITERATE(unsigned_int addr_x); // deiterates x in place
+    void INC(unsigned_int addr_x);
 
-    void REG(unsigned_int addr_x, unsigned_int addr); // replaces the register at addr with the ram value of addr_x
+    void DEC(unsigned_int addr_x);
 
-    void PUSH(unsigned_int x); // adds a variable with the value of x to the stack and puts the address in register 0
+    void ADD(unsigned_int addr_x, unsigned_int addr_y); 
 
-    void PUSH(); // adds an uninitialized variable to the stack and puts the address in register 0
+    void SUB(unsigned_int addr_x, unsigned_int addr_y); 
 
-    void POP(); // pops the top value of the stack and puts its value in register 0
+    void MUL(unsigned_int addr_x, unsigned_int addr_y); 
 
-    void ADD(unsigned_int addr_x, unsigned_int addr_y); // adds two values in RAM and saves the result to register 0
+    void DIV(unsigned_int addr_x, unsigned_int addr_y);
 
-    void SUB(unsigned_int addr_x, unsigned_int addr_y); // subtracts two values in RAM and saves the result to register 0
+    void COM(unsigned_int addr_x, unsigned_int addr_y); 
 
-    void COM(unsigned_int addr_x, unsigned_int addr_y); // checks if two values in RAM are equal and saves the result to register 0
 
-    void MUL(unsigned_int addr_x, unsigned_int addr_y); // multiplies two values in RAM and saves the result to register 0 
+    
+    unsigned_int GETR(unsigned_int addr);
 
-    void DIV(unsigned_int addr_x, unsigned_int addr_y); // divides two values in RAM by each other and saves the result to register 0    
+    void LDA(unsigned_int val);
+
+    void MVC();
+
+    void MVD();
+
+    void MVE();
+
+    void MVR(unsigned_int addr);
 };
